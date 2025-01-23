@@ -1,0 +1,8 @@
+numpy
+pandas
+indic-transliteration
+transformers
+scikit-learn
+tensorflow
+tf-keras
+dill
