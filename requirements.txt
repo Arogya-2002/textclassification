@@ -6,3 +6,5 @@ scikit-learn
 tensorflow
 tf-keras
 dill
+keras-tuner
+Flask

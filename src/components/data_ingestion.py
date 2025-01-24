@@ -1,20 +1,22 @@
 import os
 import pandas as pd
 import sys
+import joblib
 from src.exceptions.exceptions import CustomException
 from src.Logger.logger import logging
+from src.components.model_trainer import ModelTrainer
+from src.components.data_transformation import DataTransformation
+
+
 from dataclasses import dataclass
-from sklearn.model_selection import train_test_split
 from indic_transliteration.sanscript import transliterate, TELUGU, HK
 
 
-from src.components.data_transformation import DataTransformation
 
 @dataclass
 class DataIngestionConfig:
-    train_data_path: str = os.path.join('artifacts',"train.csv")
-    test_data_path: str = os.path.join('artifacts',"test.csv")
     raw_data_path: str = os.path.join('artifacts',"data.csv")
+    label_map_path: str = os.path.join('artifacts',"label_map.pkl")
 
 class DataIngestion:
     def __init__(self):
@@ -45,26 +47,27 @@ class DataIngestion:
             logging.info("converting telugu to english ")
 
             df['processed_text'] = df['text'].apply(self.preprocess_tenglish)
+            df.drop(columns=['text'],inplace=True)
 
             logging.info("converted telugu to english ")
 
-            os.makedirs(os.path.dirname(self.ingestion_config.train_data_path),exist_ok=True)
+            labels = df['emotion_label'].unique()
+            label_map = {label: idx for idx, label in enumerate(labels)}
+            df['encoded_label'] = df['emotion_label'].map(label_map) 
 
+            
+
+
+            os.makedirs(os.path.dirname(self.ingestion_config.raw_data_path),exist_ok=True)
             df.to_csv(self.ingestion_config.raw_data_path,index=False,header=True)
 
-            logging.info("Train test split initiated")
-            train_set,test_set=train_test_split(df,test_size=0.2,random_state=42)
+            logging.info("Saving the label map to artifacts path")
+            joblib.dump(label_map,self.ingestion_config.label_map_path)
 
-            train_set.to_csv(self.ingestion_config.train_data_path,index=False,header=True)
-
-            test_set.to_csv(self.ingestion_config.test_data_path,index=False,header=True)
-
-            logging.info("Ingestion of the data is completed")
 
             return(
-                self.ingestion_config.train_data_path, 
-                self.ingestion_config.test_data_path
-
+                self.ingestion_config.raw_data_path
+               
             )
         except Exception as e:
             raise CustomException(e,sys)
@@ -77,7 +80,10 @@ class DataIngestion:
         
 if __name__=="__main__":
     obj=DataIngestion()
-    train_data,test_data=obj.initiate_data_ingestion()
+    data_path=obj.initiate_data_ingestion()
 
-    data_transformation=DataTransformation()
-    train_arr,test_arr,_=data_transformation.initiate_data_transformation(train_data,test_data)
+    data_transformation_obj = DataTransformation()
+    X_train,y_train,X_test,y_test = data_transformation_obj.data_transformation(data_path)
+
+    modeltrainer = ModelTrainer()
+    print(modeltrainer.model_tuner(X_train, y_train, X_test, y_test))  

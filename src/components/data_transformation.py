@@ -1,106 +1,63 @@
-import os
+import os 
 import sys
-from dataclasses import dataclass
-
-import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder,StandardScaler
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from sklearn.preprocessing import LabelEncoder
+
+from dataclasses import dataclass
+import joblib
 
 from src.exceptions.exceptions import CustomException
 from src.Logger.logger import logging
-from src.utils.utils import save_object
-
-
-
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path=os.path.join('artifacts',"preprocessor.pkl")
+    tokenizer_path: str = os.path.join('artifacts',"tokenizer.pkl")
+    max_sequence_length: int = 100
 
 class DataTransformation:
     def __init__(self):
-        self.data_transformation_config = DataTransformationConfig()
-
-    def get_data_transformer_object(self):
-        try:
-            categorical_columns =[
-                "emotion_label"
-            ]
-
-            cat_pipeline=Pipeline(
-
-            steps=[
-                ("imputer",SimpleImputer(strategy="most_frequent")),
-                ("one_hot_encoder",OneHotEncoder()),
-                ("scaler",StandardScaler(with_mean=False))
-                ]
-
-            )
-            logging.info(f"Categorical columns: {categorical_columns}")
-
-
-            preprocessor=ColumnTransformer(
-                [
-                ("cat_pipelines",cat_pipeline,categorical_columns)
-                ]
-            )
-
-            return preprocessor
+        self.transformation_config = DataTransformationConfig()
         
-        except Exception as e:
-            raise CustomException(e,sys)    
-        
-    
-    def initiate_data_transformation(self,train_path,test_path):
 
+    def data_transformation(self,data_path):
         try:
-            train_df=pd.read_csv(train_path)
-            test_df=pd.read_csv(test_path)
+            logging.info("Initiating data transformation")
+            logging.info(f"Reading the dataset from {data_path}")
+            df = pd.read_csv(data_path)
+            
+            if 'processed_text' not in df.columns:
+                raise CustomException("'processed_text' column not found in the dataset", sys)
+            
+            tokenizer = Tokenizer()
+            # text_data = df['processed_text'].values
+            tokenizer.fit_on_texts(df['processed_text'])
 
-            logging.info("Read train and test data completed")
+            logging.info("Saving tokenizer to artifcats path ")
+            joblib.dump(tokenizer,self.transformation_config.tokenizer_path)
 
-            logging.info("Obtaining preprocessing object")
 
-            preprocessing_obj=self.get_data_transformer_object()
+            X_encoded = tokenizer.texts_to_sequences(df['processed_text'])
+            X_padded = pad_sequences(X_encoded, maxlen=self.transformation_config.max_sequence_length)
 
-            target_column_name="emotion_label"
+            if 'encoded_label' not in df.columns:
+                raise CustomException("'encoded_label' column not found in the dataset", sys)
+            y = df['encoded_label']
+            X  = X_padded
+       
 
-            input_feature_train_df=train_df.drop(columns=[target_column_name],axis=1)
-            target_feature_train_df=train_df[target_column_name]
+            logging.info("Splitting the data into train and test sets")
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-            input_feature_test_df=test_df.drop(columns=[target_column_name],axis=1)
-            target_feature_test_df=test_df[target_column_name]
-
-            logging.info(
-                f"Applying preprocessing object on training dataframe and testing dataframe."
-            )
-
-            input_feature_train_arr=preprocessing_obj.fit_transform(input_feature_train_df)
-            input_feature_test_arr=preprocessing_obj.transform(input_feature_test_df)
-
-            train_arr = np.c_[
-                input_feature_train_arr, np.array(target_feature_train_df)
-            ]
-            test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
-
-            logging.info(f"Saved preprocessing object.")
-
-            save_object(
-
-                file_path=self.data_transformation_config.preprocessor_obj_file_path,
-                obj=preprocessing_obj
-
-            )
-
-            return (
-                train_arr,
-                test_arr,
-                self.data_transformation_config.preprocessor_obj_file_path
-            )
+            logging.info("Data transformation complete")
+            return(
+                X_train,
+                y_train,
+                X_test,
+                y_test
+                    )
+        
         except Exception as e:
             raise CustomException(e,sys)
-
-            
