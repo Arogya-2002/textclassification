@@ -24,5 +24,5 @@ def index():
     # Render the HTML template and pass the prediction result
     return render_template('index.html', prediction=prediction)
 
-if __name__ == '__main__':
-    app.run(debug=False)
+if __name__=="__main__":
+    app.run(host='0.0.0.0',port=8080) 

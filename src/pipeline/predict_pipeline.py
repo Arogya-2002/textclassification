@@ -22,8 +22,9 @@ class PredictPipeline:
             tokenizer = joblib.load(tokenizer_path)  # Load the tokenizer used during training
 
             # Load the label encoder (assuming you used a LabelEncoder during training)
-            label_encoder_path = os.path.join('artifacts', 'label_encoder.pkl')
+            label_encoder_path = os.path.join('artifacts', 'label_map.pkl')
             label_encoder = joblib.load(label_encoder_path)
+
 
 
             # Preprocessing - tokenization and padding of the input text
@@ -38,11 +39,7 @@ class PredictPipeline:
             predicted_class_index = preds.argmax(axis=-1)  # This assumes your model is multi-class
 
             predicted_class = label_encoder.inverse_transform(predicted_class_index)
-            print(f"Tokenized input: {X_encoded}")
-            print(f"Padded input: {X_padded}")
-            print(f"Predictions: {preds}")
-            print(f"Predicted class index: {predicted_class_index}")
-            print(f"Decoded class: {predicted_class}")
+
 
             return predicted_class
         

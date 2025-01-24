@@ -6,7 +6,7 @@ from src.exceptions.exceptions import CustomException
 from src.Logger.logger import logging
 from src.components.model_trainer import ModelTrainer
 from src.components.data_transformation import DataTransformation
-
+from sklearn.preprocessing import LabelEncoder
 
 from dataclasses import dataclass
 from indic_transliteration.sanscript import transliterate, TELUGU, HK
@@ -51,6 +51,9 @@ class DataIngestion:
 
             logging.info("converted telugu to english ")
 
+            label_encoder = LabelEncoder()
+            label_encoder.fit(df['emotion_label'])
+
             labels = df['emotion_label'].unique()
             label_map = {label: idx for idx, label in enumerate(labels)}
             df['encoded_label'] = df['emotion_label'].map(label_map) 
@@ -62,7 +65,7 @@ class DataIngestion:
             df.to_csv(self.ingestion_config.raw_data_path,index=False,header=True)
 
             logging.info("Saving the label map to artifacts path")
-            joblib.dump(label_map,self.ingestion_config.label_map_path)
+            joblib.dump(label_encoder,self.ingestion_config.label_map_path)
 
 
             return(
@@ -85,5 +88,5 @@ if __name__=="__main__":
     data_transformation_obj = DataTransformation()
     X_train,y_train,X_test,y_test = data_transformation_obj.data_transformation(data_path)
 
-    modeltrainer = ModelTrainer()
-    print(modeltrainer.model_tuner(X_train, y_train, X_test, y_test))  
+    # modeltrainer = ModelTrainer()
+    # print(modeltrainer.model_tuner(X_train, y_train, X_test, y_test))  
