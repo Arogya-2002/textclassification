@@ -1,6 +1,7 @@
 import sys
 import pandas as pd
 from src.exceptions.exceptions import CustomException
+from src.Logger.logger import logging
 
 import os
 import joblib
@@ -28,6 +29,8 @@ class PredictPipeline:
 
 
             # Preprocessing - tokenization and padding of the input text
+            # print(features['text'])
+            logging.info("the dialogue:", features['text'])
             X_encoded = tokenizer.texts_to_sequences(features['text'])
             max_length = max([len(seq) for seq in X_encoded])  # You can set a fixed length if needed
             X_padded = pad_sequences(X_encoded, maxlen=max_length)
@@ -39,6 +42,7 @@ class PredictPipeline:
             predicted_class_index = preds.argmax(axis=-1)  # This assumes your model is multi-class
 
             predicted_class = label_encoder.inverse_transform(predicted_class_index)
+            print(predicted_class)
 
 
             return predicted_class

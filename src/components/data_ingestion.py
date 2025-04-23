@@ -15,7 +15,7 @@ from indic_transliteration.sanscript import transliterate, TELUGU, HK
 
 @dataclass
 class DataIngestionConfig:
-    raw_data_path: str = os.path.join('artifacts',"data.csv")
+    raw_data_path: str = os.path.join('artifacts',"data.csv")       #this can also be done in two separate files as config.yaml and entity for the dataclass creation
     label_map_path: str = os.path.join('artifacts',"label_map.pkl")
 
 class DataIngestion:
@@ -88,5 +88,5 @@ if __name__=="__main__":
     data_transformation_obj = DataTransformation()
     X_train,y_train,X_test,y_test = data_transformation_obj.data_transformation(data_path)
 
-    # modeltrainer = ModelTrainer()
-    # print(modeltrainer.model_tuner(X_train, y_train, X_test, y_test))  
+    modeltrainer = ModelTrainer()
+    print(modeltrainer.model_tuner(X_train, y_train, X_test, y_test))  

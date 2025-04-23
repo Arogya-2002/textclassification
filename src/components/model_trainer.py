@@ -70,7 +70,7 @@ class ModelTrainer:
             )
     
             # Perform the hyperparameter search on training data with validation data
-            tuner.search(X_train, y_train, epochs=10, validation_data=(X_test, y_test), batch_size=32)
+            tuner.search(X_train, y_train, epochs=1, validation_data=(X_test, y_test), batch_size=32)
 
             # Get the best hyperparameters and best model
             best_hyperparameters = tuner.get_best_hyperparameters(1)[0]
